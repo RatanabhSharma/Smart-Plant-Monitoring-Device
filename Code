@@ -1,145 +1,30 @@
-#include <AVision_ESP8266.h>
+/*
+ * This ESP8266 NodeMCU code was developed by newbiely.com
+ *
+ * This ESP8266 NodeMCU code is made available for public use without any restriction
+ *
+ * For comprehensive instructions and wiring diagrams, please visit:
+ * https://newbiely.com/tutorials/esp8266/esp8266-soil-moisture-sensor
+ */
 
-#include <i18n.h>
-#include <IRac.h>
-#include <IRrecv.h>
-#include <IRremoteESP8266.h>
-#include <IRsend.h>
-#include <IRtext.h>
-#include <IRtimer.h>
-#include <IRutils.h>
-#include <ir_Airton.h>
-#include <ir_Airwell.h>
-#include <ir_Amcor.h>
-#include <ir_Argo.h>
-#include <ir_Carrier.h>
-#include <ir_Coolix.h>
-#include <ir_Corona.h>
-#include <ir_Daikin.h>
-#include <ir_Delonghi.h>
-#include <ir_Ecoclim.h>
-#include <ir_Electra.h>
-#include <ir_Fujitsu.h>
-#include <ir_Goodweather.h>
-#include <ir_Gree.h>
-#include <ir_Haier.h>
-#include <ir_Hitachi.h>
-#include <ir_Kelon.h>
-#include <ir_Kelvinator.h>
-#include <ir_LG.h>
-#include <ir_Magiquest.h>
-#include <ir_Midea.h>
-#include <ir_Mirage.h>
-#include <ir_Mitsubishi.h>
-#include <ir_MitsubishiHeavy.h>
-#include <ir_NEC.h>
-#include <ir_Neoclima.h>
-#include <ir_Panasonic.h>
-#include <ir_Rhoss.h>
-#include <ir_Samsung.h>
-#include <ir_Sanyo.h>
-#include <ir_Sharp.h>
-#include <ir_Tcl.h>
-#include <ir_Technibel.h>
-#include <ir_Teco.h>
-#include <ir_Toshiba.h>
-#include <ir_Transcold.h>
-#include <ir_Trotec.h>
-#include <ir_Truma.h>
-#include <ir_Vestel.h>
-#include <ir_Voltas.h>
-#include <ir_Whirlpool.h>
+#define AOUT_PIN A0   // The ESP8266 pin ADC0 that connects to AOUT pin of moisture sensor
+#define THRESHOLD 530 // CHANGE YOUR THRESHOLD HERE
 
-// Viral Science www.viralsciencecreativity.com www.youtube.com/c/viralscience
-// IOT Smart Plant Monitoring System
-#define BLYNK_PRINT Serial   
-#include <SPI.h>
-#include <ESP8266WiFi.h>
-#include <BlynkSimpleEsp8266.h>
-
-#include <DHT.h>
-#define BLYNK_PRINT Serial
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#define ONE_WIRE_BUS D2
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
-
-char auth[] ="----------------";               //Authentication code sent by Blynk
-char ssid[] = "-------";                       //WiFi SSID
-char pass[] = "-------";                       //WiFi Password
-
-#define sensorPin D3 
-int sensorState = 0;
-int lastState = 0;
-#define DHTPIN 2    
-#define DHTTYPE DHT11     
-DHT dht(DHTPIN, DHTTYPE);
-SimpleTimer timer;
-void sendSensor()
-{
-  float h = dht.readHumidity();
-  float t = dht.readTemperature();
-
-  if (isnan(h) || isnan(t)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return;
-  }
- 
-  Blynk.virtualWrite(V5, h);  //V5 is for Humidity
-  Blynk.virtualWrite(V6, t);  //V6 is for Temperature
-}
-void setup()
-{
+void setup() {
   Serial.begin(9600);
-  Blynk.begin(auth, ssid, pass);
-   pinMode(sensorPin, INPUT);
-  dht.begin();
-
-  timer.setInterval(1000L, sendSensor);
-  Serial.begin(115200);
-  Blynk.begin(auth, ssid, pass);
-   sensors.begin();
 }
-int sensor=0;
-void sendTemps()
-{
-sensor=analogRead(A0);
-sensors.requestTemperatures();
-float temp = sensors.getTempCByIndex(0); 
-Serial.println(temp);
-Serial.println(sensor);
-Blynk.virtualWrite(V1, temp);
-Blynk.virtualWrite(V2,sensor);
-delay(1000);
-}
-void loop()
-{
-  Blynk.run(); 
-  timer.run(); 
-  sendTemps();
-  sensorState = digitalRead(sensorPin);
-Serial.println(sensorState);
 
-if (sensorState == 1 && lastState == 0) {
-  Serial.println("needs water, send notification");
-  Blynk.notify("Water your plants");
-  lastState = 1;
-  delay(1000);
-//send notification
-    
-  } 
-  else if (sensorState == 1 && lastState == 1) {
-    //do nothing, has not been watered yet
-  Serial.println("has not been watered yet");
-  delay(1000);
-  }
-  else {
-    //st
-    Serial.println("does not need water");
-    lastState = 0;
-    delay(1000);
-  }
-  
-  delay(100);
+void loop() {
+  int value = analogRead(AOUT_PIN); // read the analog value from sensor
+
+  if (value > THRESHOLD)
+    Serial.print("The soil is DRY (");
+  else
+    Serial.print("The soil is WET (");
+
+  Serial.print(value);
+  Serial.println(")");
+
+
+  delay(500);
 }
